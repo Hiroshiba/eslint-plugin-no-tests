@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version, without v (for example: 1.2.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Validate version
+        shell: bash
+        run: |
+          if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo 'Version must be a stable SemVer version such as 1.2.3, without v.' >&2
+            exit 1
+          fi
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Reject an existing tag
+        shell: bash
+        run: |
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" || status=$?
+          if [[ "$status" != 2 ]]; then
+            echo 'Tag already exists or its availability could not be verified.' >&2
+            exit 1
+          fi
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Set artifact version
+        run: |
+          npm pkg set "version=$VERSION"
+          pnpm exec prettier --write package.json
+      - run: pnpm check
+      - run: pnpm pack --out "/tmp/eslint-plugin-no-tests-$VERSION.tgz"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh api --method POST "repos/$GH_REPO/git/refs" \
+            -f "ref=refs/tags/v$VERSION" -f "sha=$GITHUB_SHA"
+          gh release create "v$VERSION" "/tmp/eslint-plugin-no-tests-$VERSION.tgz" \
+            --verify-tag \
+            --title "v$VERSION" \
+            --generate-notes

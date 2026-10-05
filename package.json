@@ -1,0 +1,48 @@
+{
+  "name": "eslint-plugin-no-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ESLint rule for projects that intentionally do not allow tests.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^22.13.0 || >=24.0.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.10.0 || ^10.0.0"
+  },
+  "packageManager": "pnpm@10.34.6",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hiroshiba/eslint-plugin-no-tests.git"
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm typecheck && pnpm build && pnpm lint && pnpm format:check",
+    "prepack": "pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/estree": "1.0.9",
+    "@types/node": "22.20.5",
+    "eslint": "10.12.0",
+    "prettier": "3.9.9",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0",
+    "vite": "7.3.6"
+  }
+}
