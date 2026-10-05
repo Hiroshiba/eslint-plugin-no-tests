@@ -32,8 +32,10 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm typecheck && pnpm build && pnpm lint && pnpm format:check",
-    "prepack": "pnpm build"
+    "check": "pnpm build && pnpm typecheck && pnpm test:run && pnpm lint && pnpm format:check",
+    "prepack": "pnpm build",
+    "test": "pnpm build && pnpm test:run",
+    "test:run": "node --experimental-strip-types --test tests/*.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -96,9 +96,11 @@ export default [
 ## 開発
 
 pnpm のバージョンは `package.json` の `packageManager` に固定しています。
-このリポジトリにもテストコード・テストランナーは置きません。
+このプラグイン自体の動作は、ESLint 公式の [RuleTester](https://eslint.org/docs/latest/integrate/nodejs-api#ruletester) と Node.js 標準の `node:test` でテストします。
+TypeScript の構文・スコープも、既存の `typescript-eslint` のパーサーを指定して検証します。型情報を使わないルールのため、テスト用の TypeScript プロジェクトや追加のテストフレームワークは不要です。
 Vite のライブラリモードで JavaScript を、TypeScript で型定義を生成します。
 生成したプラグインを自身の ESLint 設定にも適用しています。
+自身の `tests/**` だけは `no-tests/no-tests` を無効化しますが、ほかの lint ルールは適用します。この例外は配布する `recommended` 設定には含みません。
 
 ```sh
 pnpm install --frozen-lockfile
@@ -106,8 +108,11 @@ pnpm check
 pnpm pack
 ```
 
-`pnpm check` は型チェック、ビルド、ESLint、Prettier を実行します。
-`pnpm lint` 単独の実行前には `pnpm build` が必要です。
+`pnpm check` はビルド、型チェック（テストコードを含む）、テスト、ESLint、Prettier を実行します。
+`pnpm test` はビルド後に全テストを実行します。ビルド済みなら `pnpm test:run` でテストだけを再実行できます。
+テストコードは TypeScript で書き、Node.js の `--experimental-strip-types` で実行します。
+ファイル名、フレームワークの読み込み、グローバル API、ローカル変数によるシャドーイング、TypeScript 固有構文、公開エントリーポイントと Flat Config の組み合わせを検証します。
+`pnpm lint` / `pnpm typecheck` 単独の実行前には `pnpm build` が必要です。
 `pnpm pack` はビルド済みの JavaScript・型定義と README を含む `.tgz` を作成します。
 ソースから使う場合は、このリポジトリを clone して上記を実行し、利用先で生成物をインストールします。
 
@@ -117,13 +122,13 @@ pnpm add -D /path/to/eslint-plugin-no-tests/eslint-plugin-no-tests-0.1.0.tgz
 
 ## CI とリリース
 
-push と pull request で、Node.js 22 / 24 の型チェック・ビルド・ESLint・Prettier・パッケージ作成を実行します。
+`main` への push とすべての pull request で、Node.js 22 / 24 のビルド・型チェック・テスト・ESLint・Prettier・パッケージ作成を実行します。
 
 GitHub の Actions → Release → Run workflow で `main` を選び、`version` に `1.2.3` のような安定版の SemVer を入力すると、次を行います。
 
 1. 入力と既存タグを検査
 2. 固定 lockfile から依存関係をインストール
-3. 作業コピーのパッケージバージョンを更新して全チェック・ビルド
+3. 作業コピーのパッケージバージョンを更新して全チェック（テストを含む）・ビルド
 4. 実行対象のコミットに `v1.2.3` タグを作成し、GitHub Release に `.tgz` を添付
 
 `v` 接頭辞、プレリリース、ビルドメタデータは入力できません。既存タグは上書きしません。

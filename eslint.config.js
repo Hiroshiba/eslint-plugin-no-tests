@@ -7,4 +7,6 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   noTests.configs.recommended,
+  // This plugin needs regression tests; consumer projects still forbid tests.
+  { files: ['tests/**'], rules: { 'no-tests/no-tests': 'off' } },
 ];
